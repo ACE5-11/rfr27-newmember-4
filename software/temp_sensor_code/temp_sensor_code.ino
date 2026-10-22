@@ -1,3 +1,4 @@
+#include <Wire.h>
 // Digital pins to dictate what sensor the multiplexer should get info from
 int dig[4]={2,3,4,5};
 // Pin that controls blinking LED
@@ -15,6 +16,8 @@ void setup() {
   // Pin that receives data from mutliplexer C I/O pin
   pinMode(A0, INPUT);
   pinMode(D6, OUTPUT);
+  // Initialized I2C
+  Wire.begin();
 }
 
 // method to return the voltage red as a DC signal using the threashold of 1.51V being 60C
@@ -28,7 +31,7 @@ double convert(double read){
 }
 
 double VtoT(double V){
-  return T = -(5/0.03)(V-1.51) + 60;
+  return (-(5/0.03)*(V-1.51) + 60);
 }
 
 void loop() {
@@ -64,10 +67,15 @@ void loop() {
       maxTemp = intTemp;
     }
   }
+  // Sends the highest tempature found via I2C,  thanks to well documented adruino code: https://docs.arduino.cc/learn/communication/wire/
+  Wire.beginTransmission();
+  Wire.write("Highest Tempature found: " + VtoT(maxTemp) + "C");
+  Wire.endTransmission();
+  
   // For the LED to blink when a sensor has been detected over the max threashold
   for(int k = 0; k <10 && LED; k++){
       digitalWrite(D6, LED);
-      delay(10);
+      delay(40);
       digitalWrite(D6, !LED);
   }
   
