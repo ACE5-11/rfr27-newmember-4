@@ -3,6 +3,9 @@
 int dig[4]={2,3,4,5};
 // Pin that controls blinking LED
 int D6 = 6;
+// Pins that control which sensors we want to have power and get data from:
+int odd = 7;
+int even = 8;
 // decides if the LED is lit or not
 bool LED = false;
 // Helps store the highest sensor data.
@@ -16,6 +19,9 @@ void setup() {
   // Pin that receives data from mutliplexer C I/O pin
   pinMode(A0, INPUT);
   pinMode(D6, OUTPUT);
+  // Pins for power to get data from set
+  pinMode(odd, OUTPUT);
+  pinMode(even, OUTPUT);
   // Initialized I2C
   Wire.begin();
 }
@@ -40,6 +46,7 @@ void loop() {
   // In order to store the highest tempature per illiteration through the sensors, 
    maxTemp = 5;
    intTemp = 0;
+   digitalWrite(odd, HIGH);
   // reads through all odd sensors first (since according to datasheet for the sensor, we should illiterate Cn, Cn+2, Cn+4, etc)
   for(int i = 1; i<16; i+=2){
     digitalWrite(dig[0], bitRead(i, 0));
@@ -53,7 +60,9 @@ void loop() {
     }
 
   }
-  // short delay, a lot longer than the max of 1000 ns, but just to keep data transmission safe and smooth
+  digitalWrite(odd, LOW);
+  digitalWrite(even, HIGH);
+  // short delay, a lot longer than the max of 1000 ns, but just to keep data transmission safe
   delay(100);
   // reads through all the even sensors
     for(int j = 0; j<16; j+=2){
@@ -67,18 +76,22 @@ void loop() {
       maxTemp = intTemp;
     }
   }
+  digitalWrite(even, LOW);
   // Sends the highest tempature found via I2C,  thanks to well documented adruino code: https://docs.arduino.cc/learn/communication/wire/
   Wire.beginTransmission();
-  Wire.write("Highest Tempature found: " + VtoT(maxTemp) + "C");
+  Wire.print("Highest Tempature found: ");
+  Wire.print(VtoT(maxTemp));
+  Wire.print("C");
   Wire.endTransmission();
-  
+
   // For the LED to blink when a sensor has been detected over the max threashold
   for(int k = 0; k <10 && LED; k++){
       digitalWrite(D6, LED);
       delay(40);
       digitalWrite(D6, !LED);
+      delay(40);
   }
   
-  // short delay, a lot longer than the max of 1000 ns, but just to keep data transmission safe and smooth
+  // short delay, a lot longer than the max of 1000 ns, but just to keep data transmission safe
   delay(100);
 }
