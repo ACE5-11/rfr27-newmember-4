@@ -77,7 +77,7 @@ void loop() {
     }
   }
   digitalWrite(even, LOW);
-  // Sends the highest tempature found via I2C,  thanks to well documented adruino code: https://docs.arduino.cc/learn/communication/wire/
+  // Sends the highest tempature found via I2C,  thanks to well documented adruino code: https://docs.arduino.cc/learn/communication/wire/ and https://www.instructables.com/Arduino-and-I2C/
   Wire.beginTransmission();
   Wire.print("Highest Tempature found: ");
   Wire.print(VtoT(maxTemp));
