@@ -27,6 +27,10 @@ double convert(double read){
   return vin;
 }
 
+double VtoT(double V){
+  return T = -(5/0.03)(V-1.51) + 60;
+}
+
 void loop() {
   // sets LED to off at the start of every loop
   LED = false;
