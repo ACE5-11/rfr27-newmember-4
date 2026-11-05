@@ -1,11 +1,8 @@
 #include <Wire.h>
 // Digital pins to dictate what sensor the multiplexer should get info from
-int dig[4]={2,3,4,5};
+int dig[4]={2,3,4,};
 // Pin that controls blinking LED
 int D6 = 6;
-// Pins that control which sensors we want to have power and get data from:
-int odd = 7;
-int even = 8;
 // decides if the LED is lit or not
 bool LED = false;
 // Helps store the highest sensor data.
@@ -15,13 +12,9 @@ void setup() {
   pinMode(dig[0], OUTPUT);
   pinMode(dig[1], OUTPUT);
   pinMode(dig[2], OUTPUT);
-  pinMode(dig[3], OUTPUT);
   // Pin that receives data from mutliplexer C I/O pin
   pinMode(A0, INPUT);
   pinMode(D6, OUTPUT);
-  // Pins for power to get data from set
-  pinMode(odd, OUTPUT);
-  pinMode(even, OUTPUT);
   // Initialized I2C
   Wire.begin();
 }
@@ -46,13 +39,12 @@ void loop() {
   // In order to store the highest tempature per illiteration through the sensors, 
    maxTemp = 5;
    intTemp = 0;
-   digitalWrite(odd, HIGH);
   // reads through all odd sensors first (since according to datasheet for the sensor, we should illiterate Cn, Cn+2, Cn+4, etc)
-  for(int i = 1; i<16; i+=2){
+  for(int i = 0; i<8; i++){
     digitalWrite(dig[0], bitRead(i, 0));
     digitalWrite(dig[1], bitRead(i, 1));
     digitalWrite(dig[2], bitRead(i, 2));
-    digitalWrite(dig[3], bitRead(i, 3));
+
     // Sends the read signal to be converted to see if tempature is above threashold, and if it is, the LED STAYS LIT till the next pass of that battery full loop() cycle
     intTemp = convert(analogRead(A0));
     if(intTemp < maxTemp){
@@ -60,23 +52,6 @@ void loop() {
     }
 
   }
-  digitalWrite(odd, LOW);
-  digitalWrite(even, HIGH);
-  // short delay, a lot longer than the max of 1000 ns, but just to keep data transmission safe
-  delay(100);
-  // reads through all the even sensors
-    for(int j = 0; j<16; j+=2){
-    digitalWrite(dig[0], bitRead(j, 0));
-    digitalWrite(dig[1], bitRead(j, 1));
-    digitalWrite(dig[2], bitRead(j, 2));
-    digitalWrite(dig[3], bitRead(j, 3));
-    // same thing as the earlier test.
-    intTemp = convert(analogRead(A0));
-    if(intTemp < maxTemp){
-      maxTemp = intTemp;
-    }
-  }
-  digitalWrite(even, LOW);
   // Sends the highest tempature found via I2C,  thanks to well documented adruino code: https://docs.arduino.cc/learn/communication/wire/ and https://www.instructables.com/Arduino-and-I2C/
   Wire.beginTransmission();
   Wire.print("Highest Tempature found: ");
