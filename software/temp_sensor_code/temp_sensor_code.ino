@@ -6,8 +6,11 @@ int D6 = 6;
 // decides if the LED is lit or not
 bool LED = false;
 // Helps store the highest sensor data.
-double maxTemp = 5;
-double intTemp = 0;
+double maxTemp;
+double TTemp;
+// Matches voltage to temp across sensors from datasheet
+double volts[33] = {1.30, 1.31, 1.32, 1.33, 1.34, 1.35, 1.37, 1.38, 1.40, 1.43, 1.45, 1.48, 1.51, 1.55, 1.59, 1.63, 1.68, 1.74, 1.80, 1.86, 1.92, 1.99, 2.05, 2.11, 2.17, 2.23, 2.27, 2.32, 2.35, 2.38, 2.40, 2.42, 2.44};
+double temps[33] = {120.0, 115.0, 110.0, 105.0, 100.0, 95.0, 90.0, 85.0, 80.0, 75.0, 70.0, 65.0, 60.0, 55.0, 50.0, 45.0, 40.0, 35.0, 30.0, 25.0, 20.0, 15.0, 10.0, 5.0, 0.0, -5.0, -10.0, -15.0, -20.0, -25.0, -30.0, -35.0, -40.0};
 
 void setup() {
   pinMode(dig[0], OUTPUT);
@@ -28,28 +31,34 @@ double convert(double read){
   // subtracts the voltage drop due to the internal resistance of mux as the tempature changes (We get voltage across 3300 resistor from 5-vAo and find the current in the branch, 
   // then find the voltage drop across internal mux, and then subtract that form the vA0 reading)
   double vSensor =  vA0 - (470.0 * (5-vA0) / 3300.0);
-  if (vSensor<=1.51){
+  
+  // Sets a pre-assumption that the tempature across the sensors is the lowest possible incase its somehow greater than 2.44V
+  double foundTemp = -40;
+  // loops through known values of tempature valeus until it lands between two different tempatures, then it assigns the higher tempature to the sensor, to be safe
+  for(int i = 0; i < 33; i++){
+    if(vSensor <= volts[i]){
+      foundTemp = temps[i];
+      break;
+    }
+  }
+
+  if (foundTemp >= 60.0){
     LED = true;
   }
-  return vSensor;
-}
-
-double VtoT(double V){
-  // Takes how each decrease in 5mV is equal to 1 degree increase of C
-  return ((-1.0/0.005)*(V-1.51) + 60.0);
+  return foundTemp;
 }
 
 // Sends the highest tempature found via I2C,  thanks to well documented adruino code: https://docs.arduino.cc/learn/communication/wire/ and https://www.instructables.com/Arduino-and-I2C/
 void onReq(){
-  String reqMessage = "Max temp: " + String(VtoT(maxTemp), 2) + "C";
+  String reqMessage = "Max temp: " + String(maxTemp, 2) + "C";
   Wire.print(reqMessage);
 }
 
 void loop() {
   // sets LED to off at the start of every loop
   LED = false;
-  // In order to store the highest tempature per illiteration through the sensors, 
-   maxTemp = 5;
+  // In order to store the highest tempature per illiteration through the sensors, we set a baseline to make sure the value is then at least changed once
+   maxTemp = -100;
   // reads through all sensors
   for(int i = 0; i<8; i++){
     digitalWrite(dig[0], bitRead(i, 0));
@@ -59,9 +68,9 @@ void loop() {
     delayMicroseconds(150);
     // Sends the read signal to be converted to see if tempature is above threashold, and if it is, the LED STAYS LIT till the next pass of that battery full loop() cycle
     // Also lower voltage = higher tempature, so thats why intTemp becomes maxTemp when its lower
-    intTemp = convert(analogRead(A0));
-    if(intTemp < maxTemp){
-      maxTemp = intTemp;
+    TTemp = convert(analogRead(A0));
+    if(TTemp > maxTemp){
+      maxTemp = TTemp;
     }
   }
   // For the LED to blink when a sensor has been detected over the max threashold, and allow us to visually see it
